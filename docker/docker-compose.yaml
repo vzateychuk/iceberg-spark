@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  spark-master:
+    image: bitnami/spark:latest
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_NO_DAEMONIZE=true
+    ports:
+      - 7077:7077
+      - 8080:8080
+
+  spark-worker:
+    image: bitnami/spark:latest
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    depends_on:
+      - spark-master
+    ports:
+      - 8081:8081
+
+  hadoop:
+    image: bde2020/hadoop-namenode:latest
+    container_name: hadoop
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://hadoop:8020
+      - CLUSTER_NAME=hadoop-cluster
+    ports:
+      - 8020:8020
+      - 50070:50070
