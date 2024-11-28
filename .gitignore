@@ -1,5 +1,6 @@
 # IDEA
 .idea/
+metastore_db/
 
 # Compiled class file
 *.class
