@@ -19,9 +19,9 @@ public class IcebergExample {
         SparkSession spark = SparkSession.builder()
                 .appName("IcebergExample")
                 .master("local[*]")
-                .config("spark.sql.catalog.my_catalog", "org.apache.iceberg.spark.SparkCatalog")
-                .config("spark.sql.catalog.my_catalog.type", "hadoop")
-                .config("spark.sql.catalog.my_catalog.warehouse", "hdfs://hadoop:8020/warehouse")
+                .config("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkSessionCatalog")
+                .config("spark.sql.catalog.spark_catalog.type", "hadoop")
+                .config("spark.sql.catalog.spark_catalog.warehouse", "hdfs://hadoop-namenode:9000/warehouse")
                 .getOrCreate();
 
         // Define the schema for the table
@@ -34,12 +34,12 @@ public class IcebergExample {
 
         TableIdentifier tableIdentifier = TableIdentifier.of("default", "sample_table");
         Map<String, String> properties = new HashMap<>();
-        properties.put("warehouse", "hdfs://hadoop:8020/warehouse");
+        properties.put("warehouse", "hdfs://hadoop-namenode:9000/warehouse");
         Catalog catalog = CatalogUtil.loadCatalog(
                 "org.apache.iceberg.hadoop.HadoopCatalog",
-                "my_catalog",
+                "hadoop_catalog",
                 properties,
-                spark.sessionState().newHadoopConf()
+                spark.sparkContext().hadoopConfiguration()
         );
 
 
@@ -62,8 +62,8 @@ public class IcebergExample {
         // Write data to Iceberg table
         data.write()
                 .format("iceberg")
-                .mode(SaveMode.Overwrite)
-                .save("my_catalog.default.sample_table");
+                .mode(SaveMode.Append)
+                .save("hadoop_catalog.default.sample_table");
 
         System.out.println("Table created and data written!");
     }
