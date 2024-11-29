@@ -1,14 +1,50 @@
 version: '3.8'
 services:
+  hadoop-namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-namenode
+    hostname: hadoop-namenode
+    environment:
+      - CLUSTER_NAME=test
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    networks:
+      - hadoop-network
+
+  hadoop-datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-datanode
+    environment:
+      - CLUSTER_NAME=test
+      - CORE_CONF_fs_defaultFS=hdfs://hadoop-namenode:9000
+      - HADOOP_DATANODE_OPTS=-Dhadoop.security.logger=INFO,RFAS -Dhdfs.audit.logger=INFO,NullAppender -Dipc.client.connect.max.retries=20 -Dipc.client.connect.retry.interval=2000
+    ports:
+      - "9864:9864"
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    depends_on:
+      - hadoop-namenode
+    networks:
+      - hadoop-network
+
   spark-master:
     image: bitnami/spark:latest
     container_name: spark-master
     environment:
       - SPARK_MODE=master
       - SPARK_NO_DAEMONIZE=true
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
     ports:
       - 7077:7077
       - 8080:8080
+    networks:
+      - hadoop-network
 
   spark-worker:
     image: bitnami/spark:latest
@@ -16,17 +52,18 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
     depends_on:
       - spark-master
     ports:
       - 8081:8081
+    networks:
+      - hadoop-network
 
-  hadoop:
-    image: bde2020/hadoop-namenode:latest
-    container_name: hadoop
-    environment:
-      - CORE_CONF_fs_defaultFS=hdfs://hadoop:8020
-      - CLUSTER_NAME=hadoop-cluster
-    ports:
-      - 8020:8020
-      - 50070:50070
+networks:
+  hadoop-network:
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
