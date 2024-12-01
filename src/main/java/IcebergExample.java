@@ -1,60 +1,52 @@
-import org.apache.iceberg.CatalogUtil;
-import org.apache.iceberg.Schema;
-import org.apache.iceberg.Table;
-import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.types.Types;
+import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
+import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException;
+import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 
 import java.util.HashMap;
-import java.util.Map;
 
 public class IcebergExample {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws TableAlreadyExistsException, NoSuchTableException {
         // Initialize SparkSession with Iceberg support
         SparkSession spark = SparkSession.builder()
                 .appName("IcebergExample")
                 .master("local[*]")
-                .config("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkSessionCatalog")
-                .config("spark.sql.catalog.spark_catalog.type", "hadoop")
-                .config("spark.sql.catalog.spark_catalog.warehouse", "hdfs://hadoop-namenode:9000/warehouse")
+                .config("spark.sql.catalog.my_catalog", "org.apache.iceberg.spark.SparkCatalog")
+                .config("spark.sql.catalog.my_catalog.type", "hadoop")
+                .config("spark.sql.catalog.my_catalog.warehouse", "file:///D:/workdir/practice/iceberg-spark/warehouse")
                 .getOrCreate();
 
-        // Define the schema for the table
-        Schema schema = new Schema(
-                Types.NestedField.required(1, "id", Types.IntegerType.get()),
-                Types.NestedField.required(2, "name", Types.StringType.get())
-        );
-
         // Create the table if it does not exist
-
-        TableIdentifier tableIdentifier = TableIdentifier.of("default", "sample_table");
-        Map<String, String> properties = new HashMap<>();
-        properties.put("warehouse", "hdfs://hadoop-namenode:9000/warehouse");
-        Catalog catalog = CatalogUtil.loadCatalog(
-                "org.apache.iceberg.hadoop.HadoopCatalog",
-                "hadoop_catalog",
-                properties,
-                spark.sparkContext().hadoopConfiguration()
-        );
-
-
-        Table table;
-        if (!catalog.tableExists(tableIdentifier)) {
-            table = catalog.createTable(tableIdentifier, schema);
+        TableIdentifier tableIdentifier = TableIdentifier.of("db", "sample_table");
+        SparkCatalog sparkCatalog = (SparkCatalog) spark.sessionState().catalogManager().catalog("my_catalog");
+        Identifier identifier = Identifier.of(tableIdentifier.namespace().levels(), tableIdentifier.name());
+        if (!sparkCatalog.tableExists(identifier)) {
+            StructType sparkSchema = new StructType(new StructField[]{
+                    DataTypes.createStructField("id", DataTypes.IntegerType, true),
+                    DataTypes.createStructField("name", DataTypes.StringType, true)
+            });
+            sparkCatalog.createTable(identifier, sparkSchema, null, new HashMap<>());
         } else {
-            table = catalog.loadTable(tableIdentifier);
+            sparkCatalog.loadTable(identifier);
         }
 
         // Create a sample DataFrame
         Dataset<Row> data = spark.createDataFrame(
                 java.util.Arrays.asList(
+/*
                         new Person(1, "Alice"),
                         new Person(2, "Bob")
+*/
+                        new Person(3, "VZateychuk")
                 ),
                 Person.class
         );
@@ -62,8 +54,8 @@ public class IcebergExample {
         // Write data to Iceberg table
         data.write()
                 .format("iceberg")
-                .mode(SaveMode.Append)
-                .save("hadoop_catalog.default.sample_table");
+                .mode(SaveMode.Overwrite)
+                .save("my_catalog.db.sample_table");
 
         System.out.println("Table created and data written!");
     }
