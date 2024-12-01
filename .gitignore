@@ -1,6 +1,7 @@
 # IDEA
 .idea/
-metastore_db/
+warehouse/
+target/
 
 # Compiled class file
 *.class
