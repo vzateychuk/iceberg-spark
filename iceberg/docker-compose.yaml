@@ -1,14 +1,28 @@
 version: '3.8'
 services:
 
-  # Nessie Catalog Server Using In-Memory Store
-  nessie:
-    image: projectnessie/nessie:latest
-    container_name: nessie
+  # Spark cluster with a configured Iceberg catalog
+  spark-iceberg:
+    image: tabulario/spark-iceberg
+    container_name: spark-iceberg
+    build: spark/
+    depends_on:
+      - postgres
+      - minio
+    volumes:
+      - ./warehouse:/home/iceberg/warehouse
+      - ./notebooks:/home/iceberg/notebooks/notebooks
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    ports:
+      - 8888:8888
+      - 8080:8080
+      - 10000:10000
+      - 10001:10001
     networks:
       iceberg:
-    ports:
-      - 19120:19120
 
   # Minio Storage Server
   minio:
@@ -27,42 +41,40 @@ services:
       - 9000:9000
     command: ["server", "/data", "--console-address", ":9001"]
 
-  # Dremio
-  dremio:
-    platform: linux/x86_64
-    image: dremio/dremio-oss:latest
-    ports:
-      - 9047:9047
-      - 31010:31010
-      - 32010:32010
-      - 45678:45678
-    container_name: dremio
-    environment:
-      - DREMIO_JAVA_SERVER_EXTRA_OPTS=-Dpaths.dist=file:///opt/dremio/data/dist
-    networks:
-      iceberg:
-
   # Postgres
   postgres:
     image: postgres:latest
     container_name: postgres
     environment:
-      POSTGRES_DB: mydb
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: catalog
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    volumes:
+      - db:/data/postgres
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-d", "catalog", "-U", "admin" ]
+      interval: 5s
+      retries: 5
     ports:
       - "5435:5432"
     networks:
       iceberg:
 
-  #Superset
-  superset:
-    image: alexmerced/dremio-superset
-    container_name: superset
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    ports:
+      - "8889:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: password
     networks:
       iceberg:
-    ports:
-      - 8080:8088
-
+  
 networks:
   iceberg:
+
+volumes:
+  db: 

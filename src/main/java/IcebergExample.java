@@ -16,15 +16,39 @@ import java.util.HashMap;
 public class IcebergExample {
 
     public static void main(String[] args) throws TableAlreadyExistsException, NoSuchTableException {
+        // Set HADOOP_HOME and hadoop.home.dir environment variables
+        // System.setProperty("hadoop.home.dir", "D:\\Programs\\Hadoop");
+
         // Initialize SparkSession with Iceberg support
         SparkSession spark = SparkSession.builder()
-                .appName("IcebergExample")
-                .master("local[*]")
-                .config("spark.sql.catalog.my_catalog", "org.apache.iceberg.spark.SparkCatalog")
-                .config("spark.sql.catalog.my_catalog.type", "hadoop")
-                .config("spark.sql.catalog.my_catalog.warehouse", "file:///D:/workdir/practice/iceberg-spark/warehouse")
-                .getOrCreate();
+                .appName("Spark Iceberg with JDBC Catalog")
+                .config("spark.master", "local[*]")
 
+                // Iceberg Catalog Configuration for JDBC
+                .config("spark.sql.catalog.my_catalog", "org.apache.iceberg.spark.SparkCatalog")
+                .config("spark.sql.catalog.my_catalog.catalog-impl", "org.apache.iceberg.jdbc.JdbcCatalog")
+
+                // JDBC URI for PostgreSQL
+                .config("spark.sql.catalog.my_catalog.uri", "jdbc:postgresql://localhost:5435/catalog")
+
+                // Credentials for PostgreSQL
+                .config("spark.sql.catalog.my_catalog.jdbc.user", "admin")
+                .config("spark.sql.catalog.my_catalog.jdbc.password", "password")
+
+                // PostgreSQL JDBC Driver
+                .config("spark.sql.catalog.my_catalog.jdbc.driver", "org.postgresql.Driver")
+
+                // S3 MinIO Configuration
+                .config("spark.hadoop.fs.s3.endpoint", "http://127.0.0.1:9000")
+                .config("spark.hadoop.fs.s3.access.key", System.getenv("AWS_ACCESS_KEY_ID"))
+                .config("spark.hadoop.fs.s3.secret.key", System.getenv("AWS_SECRET_ACCESS_KEY"))
+                .config( "spark.hadoop.fs.s3.path.style.access", "true")
+                .config("spark.hadoop.fs.s3.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+
+                // Warehouse location on S3 MinIO
+                .config("spark.sql.catalog.my_catalog.warehouse", "s3a://warehouse/")
+
+                .getOrCreate();
         // Create the table if it does not exist
         TableIdentifier tableIdentifier = TableIdentifier.of("db", "sample_table");
         SparkCatalog sparkCatalog = (SparkCatalog) spark.sessionState().catalogManager().catalog("my_catalog");
@@ -42,10 +66,8 @@ public class IcebergExample {
         // Create a sample DataFrame
         Dataset<Row> data = spark.createDataFrame(
                 java.util.Arrays.asList(
-/*
                         new Person(1, "Alice"),
-                        new Person(2, "Bob")
-*/
+                        new Person(2, "Bob"),
                         new Person(3, "VZateychuk")
                 ),
                 Person.class
