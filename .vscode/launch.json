@@ -1,0 +1,33 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}",
+            "vmArgs": "--add-exports java.base/sun.nio.ch=ALL-UNNAMED",
+            "env": {
+                "AWS_ACCESS_KEY_ID": "0SpIiuKKXqPNvdQRPUzT",
+                "AWS_SECRET_ACCESS_KEY": "9ipMLMoBwvVOzUiX7XMwJgLqVtbBrYd1DK9kk6io"
+            }
+        },
+        {
+            "type": "java",
+            "name": "IcebergExample",
+            "request": "launch",
+            "mainClass": "IcebergExample",
+            "projectName": "iceberg-spark",
+            "vmArgs": "--add-exports java.base/sun.nio.ch=ALL-UNNAMED",
+            "env": {
+                "AWS_ACCESS_KEY_ID": "0SpIiuKKXqPNvdQRPUzT",
+                "AWS_SECRET_ACCESS_KEY": "9ipMLMoBwvVOzUiX7XMwJgLqVtbBrYd1DK9kk6io"
+            }
+        }
+    ]
+}
