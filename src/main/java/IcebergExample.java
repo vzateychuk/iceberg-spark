@@ -16,8 +16,6 @@ import java.util.HashMap;
 public class IcebergExample {
 
     public static void main(String[] args) throws TableAlreadyExistsException, NoSuchTableException {
-        // Set HADOOP_HOME and hadoop.home.dir environment variables
-        // System.setProperty("hadoop.home.dir", "D:\\Programs\\Hadoop");
 
         // Initialize SparkSession with Iceberg support
         SparkSession spark = SparkSession.builder()
@@ -39,7 +37,7 @@ public class IcebergExample {
                 .config("spark.sql.catalog.my_catalog.jdbc.driver", "org.postgresql.Driver")
 
                 // S3 MinIO Configuration
-                .config("spark.hadoop.fs.s3.endpoint", "http://127.0.0.1:9000")
+                .config("spark.hadoop.fs.s3a.endpoint", "http://127.0.0.1:9000")
                 .config("spark.hadoop.fs.s3.access.key", System.getenv("AWS_ACCESS_KEY_ID"))
                 .config("spark.hadoop.fs.s3.secret.key", System.getenv("AWS_SECRET_ACCESS_KEY"))
                 .config( "spark.hadoop.fs.s3.path.style.access", "true")
@@ -49,6 +47,7 @@ public class IcebergExample {
                 .config("spark.sql.catalog.my_catalog.warehouse", "s3a://warehouse/")
 
                 .getOrCreate();
+
         // Create the table if it does not exist
         TableIdentifier tableIdentifier = TableIdentifier.of("db", "sample_table");
         SparkCatalog sparkCatalog = (SparkCatalog) spark.sessionState().catalogManager().catalog("my_catalog");
@@ -66,9 +65,9 @@ public class IcebergExample {
         // Create a sample DataFrame
         Dataset<Row> data = spark.createDataFrame(
                 java.util.Arrays.asList(
-                        new Person(1, "Alice"),
-                        new Person(2, "Bob"),
-                        new Person(3, "VZateychuk")
+                        new Person(4, "Alice-2"),
+                        new Person(5, "Bob-2"),
+                        new Person(6, "VZateychuk-2")
                 ),
                 Person.class
         );
