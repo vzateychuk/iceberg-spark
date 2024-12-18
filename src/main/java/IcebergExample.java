@@ -23,7 +23,7 @@ public class IcebergExample {
                 .config("spark.sql.catalog.my_catalog.jdbc.driver", "org.postgresql.Driver")
 
                 // S3 MinIO Configuration
-                .config("spark.hadoop.fs.s3.endpoint", "http://127.0.0.1:9000")
+                .config("spark.hadoop.fs.s3a.endpoint", "http://127.0.0.1:9000")
                 .config("spark.hadoop.fs.s3.access.key", System.getenv("AWS_ACCESS_KEY_ID"))
                 .config("spark.hadoop.fs.s3.secret.key", System.getenv("AWS_SECRET_ACCESS_KEY"))
                 .config( "spark.hadoop.fs.s3.path.style.access", "true")
